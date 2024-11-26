@@ -81,6 +81,7 @@ selectAndPerformSort proc
         jmp endSort
 
     callPancakeSort:
+        call PancakeSort
         jmp endSort
 
     endSort:
@@ -328,7 +329,7 @@ SelectionSort_DWORD proc USES ebx
             jnz innerLoop
 
         ; swap min w/ first element in partition
-        mov dx, [ebx]           ; temp = [ebx], original value
+        mov edx, [ebx]          ; temp = [ebx], original value
         mov [ebx], eax          ; place min value @ the beginning
         mov [edi], edx          ; min = temp
 
@@ -422,7 +423,7 @@ SelectionSort_BYTE proc USES ebx
             jnz innerLoop
 
         ; swap min w/ first element in partition
-        mov dx, [ebx]           ; temp = [ebx], original value
+        mov dl, [ebx]           ; temp = [ebx], original value
         mov [ebx], al           ; place min value @ the beginning
         mov [edi], dl           ; min = temp
 
@@ -441,6 +442,295 @@ SelectionSort_BYTE proc USES ebx
 SelectionSort_BYTE endp
 
 ; pancake sort visual: https://www.youtube.com/watch?v=kk-_DDgoXfk
+COMMENT @ start w/ current size equal to number of elements
+reduce currSize by 1 while currSize > 1 
+for every currSize:
+    find index of max element in array till currSize - 1
+    flip the array for max element found
+    flip the array for element at currSize - 1
+@
+
+PancakeSort proc USES ebx
+
+    cmp ebx, 4
+    je dwordd
+
+    cmp ebx, 2
+    je wordd
+
+    cmp ebx, 1
+    je bytee
+
+    ret
+
+    dwordd:
+        call PrintArray
+        call crlf
+        lea edx, displayNewArr
+        call writestring
+        call crlf
+        call PancakeSort_DWORD
+    
+        ret
+
+    wordd:
+        call PrintArray
+        call crlf
+        lea edx, displayNewArr
+        call writestring
+        call crlf
+        call PancakeSort_WORD
+        
+        ret
+
+    bytee:
+        call PrintArray
+        call crlf
+        lea edx, displayNewArr
+        call writestring
+        call crlf
+        call PancakeSort_BYTE
+        
+        ret
+
+PancakeSort endp
+
+PancakeSort_DWORD proc USES ebx
+
+    push ebp
+    mov ebp, esp
+    push ebx                        ; for printing data later on
+
+    mov ecx, count                  ; currSize
+    lea ebx, dwordArr               ; pointing to the first element in the array
+
+    sorting:
+        cmp ecx, 1
+        jle endd                        ; exit if array is sorted completely
+
+        mov esi, 0                      ; initialize indices for finding max
+        mov edi, 1
+        mov eax, [dwordArr + esi * 4]   ; initialize max value with the first element
+        mov edx, esi                    ; maxIndex = 0
+
+        findMax:
+            cmp edi, ecx
+            jge maxFound                    ; exit loop if all elements have been traversed thru
+            mov ebx, [dwordArr + edi * 4]
+            cmp eax, ebx
+            jge skipUpdation
+            mov eax, ebx                    ; update max value
+            mov edx, edi                    ; update maxIndex
+        
+        skipUpdation:
+            inc edi
+            jmp findMax
+
+        maxFound:
+            ; edx = maxIndex
+            cmp edx, ecx
+            je sortingStep                  ; maxIndex == currSize - 1 -> skip to next size
+
+        ; flipping from 0 to maxIndex
+            mov esi, 0
+        flipToMax:
+            cmp esi, edx
+            jge flipToEnd                   ; done flipping till maxIndex
+            mov eax, [dwordArr + esi * 4]
+            mov ebx, [dwordArr + edx * 4]
+            mov [dwordArr + esi * 4], ebx
+            mov [dwordArr + edx * 4], eax
+            inc esi
+            dec edx
+            jmp flipToMax
+
+        flipToEnd:
+            mov esi, 0
+            mov edi, ecx
+            dec edi                         ; currSize - 1
+
+        flipArray:
+            cmp esi, edi
+            jge sortingStep                 ; done flipping till currSize - 1
+            mov eax, [dwordArr + esi * 4]
+            mov ebx, [dwordArr + edi * 4]
+            mov [dwordArr + esi * 4], ebx
+            mov [dwordArr + edi * 4], eax
+            inc esi
+            dec edi
+            jmp flipArray
+
+        sortingStep:
+            dec ecx                         ; --currSize
+            jmp sorting
+
+    endd:
+        ; resetting ebx
+        pop ebx
+        call PrintArray
+    
+    pop ebp
+    ret
+
+PancakeSort_DWORD endp
+
+PancakeSort_WORD proc USES ebx
+
+    push ebp
+    mov ebp, esp
+    push ebx                        ; for printing data later on
+
+    mov ecx, count                  ; currSize
+    lea ebx, wordArr                ; pointing to the first element in the array
+
+    sorting:
+        cmp ecx, 1
+        jle endd                        ; exit if array is sorted completely
+
+        mov esi, 0                      ; initialize indices for finding max
+        mov edi, 1
+        mov ax, [wordArr + esi * 2]   ; initialize max value with the first element
+        mov edx, esi                    ; maxIndex = 0
+
+        findMax:
+            cmp edi, ecx
+            jge maxFound                    ; exit loop if all elements have been traversed thru
+            mov bx, [wordArr + edi * 2]
+            cmp ax, bx
+            jge skipUpdation
+            mov ax, bx                      ; update max value
+            mov edx, edi                    ; update maxIndex
+        
+        skipUpdation:
+            inc edi
+            jmp findMax
+
+        maxFound:
+            ; edx = maxIndex
+            cmp edx, ecx
+            je sortingStep                  ; maxIndex == currSize - 1 -> skip to next size
+
+        ; flipping from 0 to maxIndex
+            mov esi, 0
+        flipToMax:
+            cmp esi, edx
+            jge flipToEnd                   ; done flipping till maxIndex
+            mov ax, [wordArr + esi * 2]
+            mov bx, [wordArr + edx * 2]
+            mov [wordArr + esi * 2], bx
+            mov [wordArr + edx * 2], ax
+            inc esi
+            dec edx
+            jmp flipToMax
+
+        flipToEnd:
+            mov esi, 0
+            mov edi, ecx
+            dec edi                         ; currSize - 1
+
+        flipArray:
+            cmp esi, edi
+            jge sortingStep                 ; done flipping till currSize - 1
+            mov ax, [wordArr + esi * 2]
+            mov bx, [wordArr + edi * 2]
+            mov [wordArr + esi * 2], bx
+            mov [wordArr + edi * 2], ax
+            inc esi
+            dec edi
+            jmp flipArray
+
+        sortingStep:
+            dec ecx                         ; --currSize
+            jmp sorting
+
+    endd:
+        ; resetting ebx
+        pop ebx
+        call PrintArray
+    
+    pop ebp
+    ret
+
+PancakeSort_WORD endp
+
+PancakeSort_BYTE proc USES ebx
+
+    push ebp
+    mov ebp, esp
+    push ebx                        ; for printing data later on
+
+    mov ecx, count                  ; currSize
+    lea ebx, byteArr                ; pointing to the first element in the array
+
+    sorting:
+        cmp ecx, 1
+        jle endd                        ; exit if array is sorted completely
+
+        mov esi, 0                      ; initialize indices for finding max
+        mov edi, 1
+        mov al, [byteArr + esi]         ; initialize max value with the first element
+        mov edx, esi                    ; maxIndex = 0
+
+        findMax:
+            cmp edi, ecx
+            jge maxFound                    ; exit loop if all elements have been traversed thru
+            mov bl, [byteArr + edi]
+            cmp al, bl
+            jge skipUpdation
+            mov al, bl                      ; update max value
+            mov edx, edi                    ; update maxIndex
+        
+        skipUpdation:
+            inc edi
+            jmp findMax
+
+        maxFound:
+            ; edx = maxIndex
+            cmp edx, ecx
+            je sortingStep                  ; maxIndex == currSize - 1 -> skip to next size
+
+        ; flipping from 0 to maxIndex
+            mov esi, 0
+        flipToMax:
+            cmp esi, edx
+            jge flipToEnd                   ; done flipping till maxIndex
+            mov al, [byteArr + esi]
+            mov bl, [byteArr + edx]
+            mov [byteArr + esi], bl
+            mov [byteArr + edx], al
+            inc esi
+            dec edx
+            jmp flipToMax
+
+        flipToEnd:
+            mov esi, 0
+            mov edi, ecx
+            dec edi                         ; currSize - 1
+
+        flipArray:
+            cmp esi, edi
+            jge sortingStep                 ; done flipping till currSize - 1
+            mov al, [byteArr + esi]
+            mov bl, [byteArr + edi]
+            mov [byteArr + esi], bl
+            mov [byteArr + edi], al
+            inc esi
+            dec edi
+            jmp flipArray
+
+        sortingStep:
+            dec ecx                         ; --currSize
+            jmp sorting
+
+    endd:
+        ; resetting ebx
+        pop ebx
+        call PrintArray
+    
+    pop ebp
+    ret
+
+PancakeSort_BYTE endp
 
 PrintArray proc USES ebx
 
