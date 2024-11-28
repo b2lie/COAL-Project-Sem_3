@@ -139,21 +139,21 @@ BubbleSort endp
 
 BubbleSort_DWORD PROC
 
-    mov ecx, LENGTHOF dwordArr
+    mov ecx, LENGTHOF dwordArr      ; outer loop counter
     dec ecx
 
     outerLoop:
         mov esi, 0
-        mov edi, ecx
+        mov edi, ecx                ;storing outer loop counter
 
     innerLoop:
-        mov eax, [dwordArr + esi * TYPE dwordArr]
+        mov eax, [dwordArr + esi * TYPE dwordArr]       ;compare arr[i] n arr[i+1]
         inc esi
         mov ebx, [dwordArr + esi * TYPE dwordArr]
         dec esi
 
         cmp eax, ebx
-        jle noSwapping
+        jle noSwapping                                  ; arr[i] <= arr[i+1] skip swapping
 
         ; swap if greater
         mov [dwordArr + esi * TYPE dwordArr], ebx
@@ -163,12 +163,13 @@ BubbleSort_DWORD PROC
 
     noSwapping:
         inc esi
-        dec edi
+        dec edi                                         ; dec innerloop counter as we move on to next index
         jnz innerLoop
 
-        dec ecx
-        jnz outerLoop
-    
+        dec ecx                                         ;if innerloop counter == 0, we dec outerloop counter 
+        jnz outerLoop                                   ; if outerLoop counetr == 0, bubble sort complete!!
+        
+        
     ; resetting ebx
     mov ebx, 4
     call PrintArray
