@@ -76,6 +76,7 @@ selectAndPerformSort proc
         jmp endSort
 
     callMergeSort:
+        call MergeSort
         jmp endSort
 
     callQuickSort:
@@ -648,6 +649,173 @@ InsertionSort_BYTE proc USES ebx
     ret
 
 InsertionSort_BYTE endp
+
+
+; sir i tried my best but i can't get my merge sort code to work :( i'm sorry
+
+;i'll include the pseudocode below in the comments !!
+
+MergeSort proc USES ebx
+    call SelectionSort
+
+COMMENT !
+
+    mov ecx , 0         ; low index (left)
+    mov edx , count     ; right index (high)
+    dec edx             ; count - 1 is passed
+    push edx
+    push ecx
+
+    call MergeSort
+
+
+    MergeSort proc 
+        
+        push ebp        ;stack frame
+        mov ebp,esp 
+
+        mov eax, [ebp + 8]   ;eax  = low index (left)
+        mov edx, [ebp + 12]  ; edx = high index (right)
+
+        ;base case (if low >= high) then return
+        cmp eax,edx
+        JGE stopRecursion
+
+        ;calc mid index 
+        ; mid = (low + high) / 2
+        mov ecx,eax
+        add ecx,edx
+        shr ecx,1            ; div by 2
+
+        ; call MergeSort again
+        push ecx             ; push mid index value as high
+        push eax             ; push low
+        call MergeSort
+        add esp, 8           ; cleaning the stack frame
+
+        ;recursive call for other half
+        push edx             ; push right
+        inc ecx
+        push ecx             ; pushign mid + 1 as low index
+        call MergeSort
+        add esp,8           
+
+        ;now calling merge function to merge the two halves
+        ; merge(arr,low,mid,high)
+
+        push edx             ; pushing high
+        push ecx             ; mid
+        push [ebp + 8]       ; low 
+
+        call merge
+        add esp,12           ; clean stack frame
+
+
+        stopRecursion:
+            pop ebp
+    ret 
+    MergeSort endp
+
+
+    merge proc
+        
+        ; l, mid and r on stack
+        push ebp
+        mov ebp,esp
+
+        mov eax,[ebp+8]     ;low
+        mov ecx,[ebp+12]    ;mid
+        mov edx,[ebp+16]    ;high
+
+        ;pointers that will traverse the array
+        mov esi,eax         ; i = low
+        mov edi,ecx         
+        inc ecx             ;j = mid + 1
+        mov ebx,eax         ;k = low   
+
+        LoopToMerge:
+            ;compare n merge the elements
+
+            cmp esi,ecx
+            ; if i > mid  merge right part
+            JG CopyRight
+
+            cmp edi,edx
+            ;if j(mid+1) > high , merge left
+            JG CopyLeft
+
+            ;if both are skipped then compare arr[i] and arr[j]
+            mov eax, dwordArr [ esi * TYPE dwordArr]
+            mov ebp , dwordArr [edi * TYPE dwordArr]
+            cmp eax,ebp
+            JLE CopyLeft
+
+            ; if above condition nto satistfied, copy arr[j] to tempArr[k]
+            mov tempArray[ebx * TYPE tempArr],ebp
+            inc edi
+            
+            ;now increment k and loop thru mergeloop again
+            jmp incK
+
+            
+            CopyLeft:
+                ;copy arr[i] to tempArr[k]
+                mov tempArr [ebx *TYPE tempArr] , eax
+                inc esi
+
+            incK:
+                inc ebx
+                JMP LoopToMerge
+
+            CopyRight:
+                ; copy elements that are remainign frm right arr (j to r)
+                cmp edi,edx
+                jg DoneCopying
+
+                mov eax, dwordArr[edi * TYPE dwordArr]   ;arr[j]
+                mov tempArr[ebx * TYPE tempArr] , eax    ;copy to temp[k]
+                inc edi                                  ;inc j
+                inc ebx                                  ; inc k
+                JMP CopyRight  
+
+
+                CopyLeftFINAL:
+                    ;i to mid elements
+                    cmp esi,ecx
+                    JG DoneCopying  ;if i> mid, left array also done
+
+                    mov eax, dwordArr[esi * TYPE dwordArr]   ;arr[i]
+                    mov tempArr[ebx * TYPE tempArr] , eax    ;copy to temp[k]
+                    inc esi                                  ;inc j
+                    inc ebx                                  ; inc k
+                    JMP CopyLeftFINAL                           
+
+
+                DoneCopying:
+                    ; sorted tempArr copied to original
+                    mov esi , [ebp + 8]  ;low
+                    mov edi , esi        ; dest ptr
+                    mov ebx , esi        ; src ptr
+
+                    cmp esi , [ebp + 16] ;comparing with high
+                    JG exitt  ;mergign done
+
+                    CopyLoop:
+                        mov eax, tempArr [ebx * TYPE tempArr]
+                        mov dwordArr[edi * TYPE dwordArr] ,eax
+                        inc edi
+                        inc ebx
+                        cmp edi, [ebp + 16]  ;if we're on last index
+                        JLE CopyLoop
+ 
+    ret
+    merge endp
+
+
+!
+
+ret 
+MergeSort endp
 
 ; pancake sort visual: https://www.youtube.com/watch?v=kk-_DDgoXfk
 
