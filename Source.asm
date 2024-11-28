@@ -72,6 +72,7 @@ selectAndPerformSort proc
         jmp endSort
 
     callInsertionSort:
+        call InsertionSort
         jmp endSort
 
     callMergeSort:
@@ -441,7 +442,215 @@ SelectionSort_BYTE proc USES ebx
    
 SelectionSort_BYTE endp
 
+InsertionSort proc USES ebx
+
+    cmp ebx, 4
+    je dwordd
+
+    cmp ebx, 2
+    je wordd
+
+    cmp ebx, 1
+    je bytee
+
+    ret
+
+    dwordd:
+        call PrintArray
+        call crlf
+        lea edx, displayNewArr
+        call writestring
+        call crlf
+        call InsertionSort_DWORD
+    
+        ret
+
+    wordd:
+        call PrintArray
+        call crlf
+        lea edx, displayNewArr
+        call writestring
+        call crlf
+        call InsertionSort_WORD
+        
+        ret
+
+    bytee:
+        call PrintArray
+        call crlf
+        lea edx, displayNewArr
+        call writestring
+        call crlf
+        call InsertionSort_BYTE
+        
+        ret
+
+InsertionSort endp
+
+InsertionSort_DWORD proc USES ebx
+
+	mov ecx, count
+	dec ecx
+
+	L1:                                           
+		push ecx                      ; store the loop counter
+		mov eax, ecx
+		mov esi, OFFSET dwordArr
+		mov ecx, count
+		sub ecx, eax                  ; calculate number of loops
+		mov eax, ecx
+		mov edx, 4
+		mul edx
+		add esi, eax                  ; calculate address of tested number
+		mov eax, [esi]                ; store the number to compare		
+		mov esi, OFFSET dwordArr           ; restore esi to the beginning 
+
+	L2:                               
+		cmp eax, [esi]                ; if that number is less
+		jl L3                         ; jump to next part
+		add esi, 4                    
+		loop L2                       ; if not
+		jmp L5                        ; jump to the end of this loop
+
+	L3:
+		push esi                      ; store current position
+		push eax
+		mov eax, ecx
+		mov edx, 4
+		mul edx
+		add esi, eax                  ; move to position of tested number
+		pop eax
+
+	L4:
+		mov edx, [esi - 4]            ; copy the values to next position
+		mov [esi], edx
+		sub esi, 4                    
+		loop L4
+		pop esi                       ; restore current position
+		mov [esi], eax                ; copy the tested number to [esi]
+
+	L5:
+		pop ecx                       ; restore the loop counter 
+		loop L1
+
+    endSorting:
+        mov ebx, 4
+        call PrintArray
+    ret
+
+InsertionSort_DWORD endp
+
+InsertionSort_WORD proc USES ebx
+
+	mov ecx, count
+	dec ecx
+
+	L1:                                           
+		push ecx                      ; store the loop counter
+		mov eax, ecx
+		mov esi, OFFSET wordArr
+		mov ecx, count
+		sub ecx, eax                  ; calculate number of loops
+		mov eax, ecx
+		mov edx, 2
+		mul edx
+		add esi, eax                  ; calculate address of tested number
+		mov ax, [esi]                ; store the number to compare		
+		mov esi, OFFSET wordArr           ; restore esi to the beginning 
+
+	L2:                               
+		cmp ax, [esi]                ; if that number is less
+		jl L3                         ; jump to next part
+		add esi, 2                    
+		loop L2                       ; if not
+		jmp L5                        ; jump to the end of this loop
+
+	L3:
+		push esi                      ; store current position
+		push eax
+		mov eax, ecx
+		mov edx, 2
+		mul edx
+		add esi, eax                  ; move to position of tested number
+		pop eax
+
+	L4:
+		mov dx, [esi - 2]            ; copy the values to next position
+		mov [esi], dx
+		sub esi, 2                    
+		loop L4
+		pop esi                       ; restore current position
+		mov [esi], ax                ; copy the tested number to [esi]
+
+	L5:
+		pop ecx                       ; restore the loop counter 
+		loop L1
+
+    endSorting:
+        mov ebx, 2
+        call PrintArray
+    
+    ret
+
+InsertionSort_WORD endp
+
+
+InsertionSort_BYTE proc USES ebx
+
+	mov ecx, count
+	dec ecx
+
+	L1:                                           
+		push ecx                      ; store the loop counter
+		mov eax, ecx
+		mov esi, OFFSET byteArr
+		mov ecx, count
+		sub ecx, eax                  ; calculate number of loops
+		mov eax, ecx
+		mov edx, 1
+		mul edx
+		add esi, eax                  ; calculate address of tested number
+		mov al, [esi]                ; store the number to compare		
+		mov esi, OFFSET byteArr           ; restore esi to the beginning 
+
+	L2:                               
+		cmp al, [esi]                ; if that number is less
+		jl L3                         ; jump to next part
+		add esi, 1                    
+		loop L2                       ; if not
+		jmp L5                        ; jump to the end of this loop
+
+	L3:
+		push esi                      ; store current position
+		push eax
+		mov eax, ecx
+		mov edx, 1
+		mul edx
+		add esi, eax                  ; move to position of tested number
+		pop eax
+
+	L4:
+		mov dl, [esi - 1]            ; copy the values to next position
+		mov [esi], dl
+		sub esi, 1                    
+		loop L4
+		pop esi                       ; restore current position
+		mov [esi], al                ; copy the tested number to [esi]
+
+	L5:
+		pop ecx                       ; restore the loop counter 
+		loop L1
+
+    endSorting:
+        mov ebx, 1
+        call PrintArray
+    
+    ret
+
+InsertionSort_BYTE endp
+
 ; pancake sort visual: https://www.youtube.com/watch?v=kk-_DDgoXfk
+
 COMMENT @ start w/ current size equal to number of elements
 reduce currSize by 1 while currSize > 1 
 for every currSize:
