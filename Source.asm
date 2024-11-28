@@ -80,6 +80,7 @@ selectAndPerformSort proc
         jmp endSort
 
     callQuickSort:
+        call QuickSort_dword
         jmp endSort
 
     callPancakeSort:
@@ -817,6 +818,98 @@ COMMENT !
 
 ret 
 MergeSort endp
+
+quicksort_dword proc uses ebx
+    mov eax, 0          ; Start index = 0
+    mov ebx, count
+    dec ebx             ; End index = n - 1
+
+iterativeQuickSort:
+    ; Check if the subarray has more than one element
+    cmp eax, ebx
+    jge done_sorting    ; If start >= end, we're done
+
+    ; Partition the array around the pivot and get the pivot index
+    push eax            ; Save start index
+    push ebx            ; Save end index
+    call partition_dword
+    pop ebx             ; Restore end index
+    pop eax             ; Restore start index
+
+    ; After partition, we have two subarrays: [start, pivot-1] and [pivot+1, end]
+
+    ; Left subarray: [start, pivot-1]
+    mov ecx, eax        ; pivot index
+    dec ecx             ; pivot - 1
+    ; Check if there's more than one element in the left subarray
+    cmp eax, ecx
+    jge skip_left_subarray
+    push eax            ; Start index of left subarray
+    push ecx            ; End index of left subarray
+    ; Right subarray: [pivot+1, end]
+skip_left_subarray:
+    inc eax
+    ; Check if there's more than one element in the right subarray
+    cmp eax, ebx
+    jge skip_right_subarray
+    push eax            ; Start index of right subarray
+    push ebx            ; End index of right subarray
+
+skip_right_subarray:
+    ; Continue sorting subarrays
+    jmp iterativeQuickSort
+
+done_sorting:
+	mov ebx, 4
+	call printarray
+ret
+quicksort_dword endp
+
+partition_dword proc
+    mov edx, [dwordArr + ebx*4]  ; pivot = array[ebx]
+    mov esi, eax              ; start index
+    dec ebx                    ; end index for comparison
+
+partition_loop:
+    ; Move forward from start until we find an element greater than the pivot
+    cmp esi, ebx            ; Check if esi has passed ebx (stop if true)
+    jge done_partition
+    cmp [dwordArr + esi*4], edx
+    jg found_greater
+
+    ; Move forward
+    inc esi
+    jmp partition_loop
+
+found_greater:
+    ; Move backward from end until we find an element smaller than the pivot
+    cmp esi, ebx            ; Check if esi has passed ebx (stop if true)
+    jge done_partition
+    cmp [dwordArr + ebx*4], edx
+    jl found_smaller
+
+    ; Move backward
+    dec ebx
+    jmp partition_loop
+
+found_smaller:
+    ; Swap elements at indices esi and ebx
+    mov ecx, [dwordArr + esi*4]
+    mov edx, [dwordArr + ebx*4]
+    mov [dwordArr + esi*4], edx
+    mov [dwordArr + ebx*4], ecx
+
+    jmp partition_loop
+
+done_partition:
+    ; Place pivot in the correct position
+    mov ecx, [dwordArr + esi*4]
+    mov [dwordArr + esi*4], edx
+    mov [dwordArr + ebx*4], ecx  ; Place pivot at the correct position
+
+    mov eax, esi               ; Return index of pivot
+    ret
+partition_dword endp
 
 ; pancake sort visual: https://www.youtube.com/watch?v=kk-_DDgoXfk
 
