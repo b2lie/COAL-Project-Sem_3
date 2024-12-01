@@ -813,103 +813,271 @@ COMMENT !
     ret
     merge endp
 
-
 !
 
 ret 
 MergeSort endp
 
-quicksort_dword proc uses ebx
-    mov eax, 0          ; Start index = 0
-    mov ebx, count
-    dec ebx             ; End index = n - 1
 
-iterativeQuickSort:
-    ; Check if the subarray has more than one element
-    cmp eax, ebx
-    jge done_sorting    ; If start >= end, we're done
+; Quick Sort Functions
+QuickSort proc USES ebx
+    
+    call PrintArray
+    mov edx, offset displayNewArr
+    call writestring 
+    call crlf
+    cmp ebx, 4
+    je QuickSort_DWORD
 
-    ; Partition the array around the pivot and get the pivot index
-    push eax            ; Save start index
-    push ebx            ; Save end index
-    call partition_dword
-    pop ebx             ; Restore end index
-    pop eax             ; Restore start index
+    cmp ebx, 2
+    je QuickSort_WORD
 
-    ; After partition, we have two subarrays: [start, pivot-1] and [pivot+1, end]
+    cmp ebx, 1
+    je QuickSort_BYTE
 
-    ; Left subarray: [start, pivot-1]
-    mov ecx, eax        ; pivot index
-    dec ecx             ; pivot - 1
-    ; Check if there's more than one element in the left subarray
-    cmp eax, ecx
-    jge skip_left_subarray
-    push eax            ; Start index of left subarray
-    push ecx            ; End index of left subarray
-    ; Right subarray: [pivot+1, end]
-skip_left_subarray:
-    inc eax
-    ; Check if there's more than one element in the right subarray
-    cmp eax, ebx
-    jge skip_right_subarray
-    push eax            ; Start index of right subarray
-    push ebx            ; End index of right subarray
-
-skip_right_subarray:
-    ; Continue sorting subarrays
-    jmp iterativeQuickSort
-
-done_sorting:
-	mov ebx, 4
-	call printarray
-ret
-quicksort_dword endp
-
-partition_dword proc
-    mov edx, [dwordArr + ebx*4]  ; pivot = array[ebx]
-    mov esi, eax              ; start index
-    dec ebx                    ; end index for comparison
-
-partition_loop:
-    ; Move forward from start until we find an element greater than the pivot
-    cmp esi, ebx            ; Check if esi has passed ebx (stop if true)
-    jge done_partition
-    cmp [dwordArr + esi*4], edx
-    jg found_greater
-
-    ; Move forward
-    inc esi
-    jmp partition_loop
-
-found_greater:
-    ; Move backward from end until we find an element smaller than the pivot
-    cmp esi, ebx            ; Check if esi has passed ebx (stop if true)
-    jge done_partition
-    cmp [dwordArr + ebx*4], edx
-    jl found_smaller
-
-    ; Move backward
-    dec ebx
-    jmp partition_loop
-
-found_smaller:
-    ; Swap elements at indices esi and ebx
-    mov ecx, [dwordArr + esi*4]
-    mov edx, [dwordArr + ebx*4]
-    mov [dwordArr + esi*4], edx
-    mov [dwordArr + ebx*4], ecx
-
-    jmp partition_loop
-
-done_partition:
-    ; Place pivot in the correct position
-    mov ecx, [dwordArr + esi*4]
-    mov [dwordArr + esi*4], edx
-    mov [dwordArr + ebx*4], ecx  ; Place pivot at the correct position
-
-    mov eax, esi               ; Return index of pivot
     ret
-partition_dword endp
+QuickSort ENDP
+
+QuickSort_DWORD PROC
+    lea esi, dwordArr 
+    mov ecx, LENGTHOF dwordArr
+    call QuickSort_Helper
+    mov ebx , 4
+    call PrintArray
+    ret
+QuickSort_DWORD endp
+
+QuickSort_WORD PROC
+    lea esi, [wordArr]      ; ESI now points to the start of wordArr
+    mov ecx, LENGTHOF wordArr
+    call QuickSort_Helper_Word
+    mov ebx , 2
+    call PrintArray
+    ret
+QuickSort_WORD endp
+
+QuickSort_BYTE PROC
+    lea esi, byteArr
+    mov ecx, LENGTHOF byteArr
+    call QuickSort_Helper_Byte
+    mov ebx , 1
+    call PrintArray
+    ret
+QuickSort_BYTE endp
+
+QuickSort_Helper PROC
+    ; Parameters: ESI points to the array, ECX is the length of the array
+
+    ; Base Case: If the array has 1 or fewer elements, return
+    cmp ecx, 1
+    jle endQuickSort
+
+
+    ; Pivot: Use the last element as the pivot
+    mov edi, ecx
+    dec edi                           ; edi = ecx - 1
+    mov eax, [esi + edi * TYPE dwordArr] ; Load pivot into eax
+    xor ebx, ebx                      ; Initialize index for smaller element
+    xor edx, edx                      ; Initialize current element index
+
+partitionLoop:
+    cmp edx, edi                      ; Check if edx < pivot index
+    jge swapPivot                     ; If not, go to pivot swapping
+
+    ; Compare the current element with the pivot
+    mov ebp, [esi + edx * TYPE dwordArr] ; Load current element
+    cmp ebp, eax
+    jg continueLoop                   ; Skip if current element > pivot
+
+    ; Swap current element with element at 'ebx'
+    mov ebp, [esi + ebx * TYPE dwordArr]
+    push ecx
+    mov ecx ,  [esi + edx * TYPE dwordArr]
+    mov [esi + ebx * TYPE dwordArr],ecx
+
+    pop ecx
+    mov [esi + edx * TYPE dwordArr], ebp
+    inc ebx                           ; Increment index for smaller element
+
+continueLoop:
+    inc edx                           ; Move to the next element
+    jmp partitionLoop
+
+swapPivot:
+    ; Swap pivot with the element at index 'ebx'
+    mov ebp, [esi + ebx * TYPE dwordArr] ; Load value at 'ebx'
+    mov [esi + ebx * TYPE dwordArr], eax ; Place pivot at 'ebx'
+    mov [esi + edi * TYPE dwordArr], ebp ; Place value at 'ebx' into pivot position
+
+    ; Save the stack state
+    push ecx                          ; Save current length
+    push esi                          ; Save pointer to the array
+
+    ; Recursively sort the left partition
+    mov ecx, ebx                      ; Length of the left partition
+    call QuickSort_Helper             ; Sort left partition
+
+    ; Restore the stack state
+    pop esi                           ; Restore array pointer
+    pop ecx                           ; Restore length
+
+    ; Recursively sort the right partition
+    sub ecx, ebx                      ; Length of the right partition
+    dec ecx                           ; Exclude the pivot
+    jle endQuickSort                  ; Skip if no right partition
+    push ecx
+    mov ecx , ebx
+    inc ecx
+    lea esi, [esi + (ecx) * TYPE dwordArr] ; Move to the right partition
+    pop ecx
+    call QuickSort_Helper             ; Sort right partition
+
+endQuickSort:
+    
+    ret
+QuickSort_Helper ENDP
+
+QuickSort_Helper_Word PROC
+   ; Parameters: ESI points to the array, ECX is the length of the array
+
+    ; Base Case: If the array has 1 or fewer elements, return
+    cmp ecx, 1
+    jle endQuickSort
+
+    ; Pivot: Use the last element as the pivot
+    mov edi, ecx
+    dec edi                           ; edi = ecx - 1
+    mov eax, [esi + edi * TYPE wordArr] ; Load pivot into eax
+    xor ebx, ebx                      ; Initialize index for smaller element
+    xor edx, edx                      ; Initialize current element index
+
+partitionLoop:
+    cmp edx, edi                      ; Check if edx < pivot index
+    jge swapPivot                     ; If not, go to pivot swapping
+
+    ; Compare the current element with the pivot
+    mov ebp, [esi + edx * TYPE wordArr] ; Load current element
+    cmp ebp, eax
+    jg continueLoop                   ; Skip if current element > pivot
+
+    ; Swap current element with element at 'ebx'
+    mov ebp, [esi + ebx * TYPE wordArr]
+    push ecx
+    mov ecx ,  [esi + edx * TYPE wordArr]
+    mov [esi + ebx * TYPE wordArr],ecx
+
+    pop ecx
+    mov [esi + edx * TYPE wordArr], ebp
+    inc ebx                           ; Increment index for smaller element
+
+continueLoop:
+    inc edx                           ; Move to the next element
+    jmp partitionLoop
+
+swapPivot:
+    ; Swap pivot with the element at index 'ebx'
+    mov ebp, [esi + ebx * TYPE wordArr] ; Load value at 'ebx'
+    mov [esi + ebx * TYPE wordArr], eax ; Place pivot at 'ebx'
+    mov [esi + edi * TYPE wordArr], ebp ; Place value at 'ebx' into pivot position
+
+    ; Save the stack state
+    push ecx                          ; Save current length
+    push esi                          ; Save pointer to the array
+
+    ; Recursively sort the left partition
+    mov ecx, ebx                      ; Length of the left partition
+    call QuickSort_Helper_Word             ; Sort left partition
+
+    ; Restore the stack state
+    pop esi                           ; Restore array pointer
+    pop ecx                           ; Restore length
+
+    ; Recursively sort the right partition
+    sub ecx, ebx                      ; Length of the right partition
+    dec ecx                           ; Exclude the pivot
+    jle endQuickSort                  ; Skip if no right partition
+    push ecx
+    mov ecx , ebx
+    inc ecx
+    lea esi, [esi + (ecx) * TYPE wordArr] ; Move to the right partition
+    pop ecx
+    call QuickSort_Helper_Word            ; Sort right partition
+
+endQuickSort:
+    mov ebx,2
+    call PrintArray
+    ret
+QuickSort_Helper_Word ENDP
+
+QuickSort_Helper_Byte PROC
+    ; Parameters: ESI points to the array, ECX is the length of the array
+
+    ; Base Case: If the array has 1 or fewer elements, return
+    cmp ecx, 1
+    jle endQuickSort
+    
+    ; Pivot: Use the last element as the pivot
+    mov edi, ecx
+    dec edi                           ; edi = ecx - 1
+    mov eax, [esi + edi * TYPE byteArr] ; Load pivot into eax
+    xor ebx, ebx                      ; Initialize index for smaller element
+    xor edx, edx                      ; Initialize current element index
+
+partitionLoop:
+    cmp edx, edi                      ; Check if edx < pivot index
+    jge swapPivot                     ; If not, go to pivot swapping
+
+    ; Compare the current element with the pivot
+    mov ebp, [esi + edx * TYPE byteArr] ; Load current element
+    cmp ebp, eax
+    jg continueLoop                   ; Skip if current element > pivot
+
+    ; Swap current element with element at 'ebx'
+    mov ebp, [esi + ebx * TYPE byteArr]
+    push ecx
+    mov ecx ,  [esi + edx * TYPE byteArr]
+    mov [esi + ebx * TYPE byteArr],ecx
+
+    pop ecx
+    mov [esi + edx * TYPE byteArr], ebp
+    inc ebx                           ; Increment index for smaller element
+
+continueLoop:
+    inc edx                           ; Move to the next element
+    jmp partitionLoop
+
+swapPivot:
+    ; Swap pivot with the element at index 'ebx'
+    mov ebp, [esi + ebx * TYPE byteArr] ; Load value at 'ebx'
+    mov [esi + ebx * TYPE byteArr], eax ; Place pivot at 'ebx'
+    mov [esi + edi * TYPE byteArr], ebp ; Place value at 'ebx' into pivot position
+
+    ; Save the stack state
+    push ecx                          ; Save current length
+    push esi                          ; Save pointer to the array
+
+    ; Recursively sort the left partition
+    mov ecx, ebx                      ; Length of the left partition
+    call QuickSort_Helper_Byte             ; Sort left partition
+
+    ; Restore the stack state
+    pop esi                           ; Restore array pointer
+    pop ecx                           ; Restore length
+
+    ; Recursively sort the right partition
+    sub ecx, ebx                      ; Length of the right partition
+    dec ecx                           ; Exclude the pivot
+    jle endQuickSort                  ; Skip if no right partition
+    push ecx
+    mov ecx , ebx
+    inc ecx
+    lea esi, [esi + (ecx) * TYPE byteArr] ; Move to the right partition
+    pop ecx
+    call QuickSort_Helper_Byte             ; Sort right partition
+
+endQuickSort:
+    ret
+QuickSort_Helper_Byte ENDP
 
 ; pancake sort visual: https://www.youtube.com/watch?v=kk-_DDgoXfk
 
