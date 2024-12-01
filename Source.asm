@@ -597,7 +597,6 @@ InsertionSort_WORD proc USES ebx
 
 InsertionSort_WORD endp
 
-
 InsertionSort_BYTE proc USES ebx
 
 	mov ecx, count
@@ -839,7 +838,7 @@ QuickSort proc USES ebx
 QuickSort ENDP
 
 QuickSort_DWORD PROC
-    lea esi, dwordArr 
+    lea esi, dwordArr  
     mov ecx, LENGTHOF dwordArr
     call QuickSort_Helper
     mov ebx , 4
@@ -848,7 +847,7 @@ QuickSort_DWORD PROC
 QuickSort_DWORD endp
 
 QuickSort_WORD PROC
-    lea esi, [wordArr]      ; ESI now points to the start of wordArr
+      lea esi, [wordArr]      ; ESI now points to the start of wordArr
     mov ecx, LENGTHOF wordArr
     call QuickSort_Helper_Word
     mov ebx , 2
@@ -871,7 +870,6 @@ QuickSort_Helper PROC
     ; Base Case: If the array has 1 or fewer elements, return
     cmp ecx, 1
     jle endQuickSort
-
 
     ; Pivot: Use the last element as the pivot
     mov edi, ecx
@@ -1078,6 +1076,7 @@ swapPivot:
 endQuickSort:
     ret
 QuickSort_Helper_Byte ENDP
+
 
 ; pancake sort visual: https://www.youtube.com/watch?v=kk-_DDgoXfk
 
@@ -1426,5 +1425,6 @@ PrintArray proc USES ebx
         ret
 
 PrintArray endp
+
 
 end main
